@@ -1,4 +1,4 @@
-import React,{useState} from "react";
+import {useState} from "react";
 import { supabase, hasSupabase } from "../lib/supabase";
 export default function AuthMock({open,onClose,onAuthed}:{open:boolean;onClose:()=>void;onAuthed:(e:string)=>void;}){
   const [email,setEmail]=useState("");
