@@ -1,0 +1,2 @@
+import React,{useEffect,useState} from "react";
+export default function DMToast({text}:{text:string}){const[s,setS]=useState(true);useEffect(()=>{const t=setTimeout(()=>setS(false),2000);return()=>clearTimeout(t)},[]);if(!s)return null;return(<div className="fixed bottom-4 left-0 right-0 z-[95] pointer-events-none flex justify-center"><div className="pointer-events-auto px-4 py-2 rounded-full bg-black text-white text-sm shadow">{text}</div></div>)}
