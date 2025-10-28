@@ -82,7 +82,7 @@ export default function App(){
   <div className="min-h-screen bg-gray-50 flex flex-col">
    <header className="sticky top-0 z-50 bg-white border-b">
     <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-     <h1 className="text-xl font-bold">NekoList</h1>
+     <h1 className="text-xl font-bold">Nacho</h1>
      <div className="flex gap-2">
       {(["nyc","la","ldn"] as City[]).map(c=>(
        <button key={c} onClick={()=>setCity(c)} className={`px-4 py-1.5 rounded-full text-sm ${city===c?"bg-black text-white":"bg-gray-100"}`}>{c.toUpperCase()}</button>

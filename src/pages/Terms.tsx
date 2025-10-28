@@ -7,7 +7,7 @@ export default function Terms() {
         <section className="mb-8">
           <h2 className="text-xl font-semibold mb-4">1. サービス概要</h2>
           <p className="text-gray-700 mb-4">
-            NekoList（以下「本サービス」）は、NYC・LA・ロンドンを中心とした地域コミュニティ向けの掲示板プラットフォームです。
+            Nacho（以下「本サービス」）は、NYC・LA・ロンドンを中心とした地域コミュニティ向けの掲示板プラットフォームです。
             ユーザー間の直接取引を仲介せず、情報掲載の場のみを提供します。
           </p>
         </section>

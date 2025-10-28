@@ -5,9 +5,9 @@ export default function Guidelines() {
         <h1 className="text-3xl font-bold mb-8">コミュニティガイドライン</h1>
         
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">🎯 NekoListの目的</h2>
+          <h2 className="text-xl font-semibold mb-4">🎯 Nachoの目的</h2>
           <p className="text-gray-700 mb-4">
-            NekoListは、NYC・LA・ロンドンの日本語コミュニティが安全に情報交換できる場です。
+            Nachoは、NYC・LA・ロンドンの日本語コミュニティが安全に情報交換できる場です。
             違法行為・差別・ハラスメントのない健全な環境を維持するため、以下のルールを遵守してください。
           </p>
         </section>
