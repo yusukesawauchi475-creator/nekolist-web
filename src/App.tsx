@@ -2,6 +2,7 @@ import React,{useEffect,useMemo,useState} from "react";
 import PostForm from "./components/PostForm";
 import AuthMock from "./components/AuthMock";
 import DMToast from "./components/DMToast";
+import ReportModal from "./components/ReportModal";
 import { Footer } from "./components/Footer";
 import { fetchListings } from "./api/listings";
 import { startThread } from "./api/messages";
@@ -37,6 +38,8 @@ export default function App(){
  const [postOpen,setPostOpen]=useState(false);
  const [authOpen,setAuthOpen]=useState(false);
  const [dmOpen,setDmOpen]=useState(false);
+ const [reportOpen,setReportOpen]=useState(false);
+ const [reportListingId,setReportListingId]=useState("");
  const [user,setUser]=useState("");
  const [page,setPage]=useState(1);
  const PER_PAGE=20;
@@ -67,8 +70,12 @@ export default function App(){
   setTimeout(()=>setDmOpen(false),3000);
  };
  const handleReport=(id:string)=>{
-  reportListing({listing_id:id,reporterId:undefined});
-  alert("通報しました");
+  setReportListingId(id);
+  setReportOpen(true);
+ };
+ const submitReport=(reason:string)=>{
+  reportListing({listing_id:reportListingId,reporterId:undefined,reason});
+  alert("通報しました。24時間以内に対応します。");
  };
 
  return (
@@ -112,6 +119,7 @@ export default function App(){
    {postOpen&&<PostForm city={city} user={user} onClose={()=>setPostOpen(false)} onSuccess={()=>{setPostOpen(false);fetchListings(city).then(setItems);}}/>}
    {authOpen&&<AuthMock open={authOpen} onClose={()=>setAuthOpen(false)} onAuthed={e=>{setUser(e);setAuthOpen(false);}}/>}
    {dmOpen&&<DMToast/>}
+   {reportOpen&&<ReportModal open={reportOpen} onClose={()=>setReportOpen(false)} onSubmit={submitReport}/>}
   </div>
  );
 }
