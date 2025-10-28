@@ -24,8 +24,7 @@ export async function fetchListings(city: City): Promise<Listing[]> {
     .select("id, city, cat, title, excerpt, price, area, thumb, visible, created_at")
     .eq("city", city)
     .eq("visible", true)
-    .order("created_at", { ascending: false })
-    .limit(100);
+    .order("created_at", { ascending: false });
   if (error) return DUMMY[city];
   return data as Listing[];
 }
