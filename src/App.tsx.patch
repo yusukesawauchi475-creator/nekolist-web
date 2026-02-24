@@ -1,0 +1,23 @@
+// import追加
+import DMModal from "./components/DMModal";
+
+// state追加
+const [dmListing, setDmListing] = useState<Listing | null>(null);
+
+// ListCard の連絡するボタン修正
+onClick={() => {
+  if (!user) {
+    setAuthOpen(true);
+  } else {
+    setDmListing(listing);
+  }
+}}
+
+// DMModal追加（最後）
+{dmListing && user && (
+  <DMModal
+    listing={dmListing}
+    senderEmail={user}
+    onClose={() => setDmListing(null)}
+  />
+)}

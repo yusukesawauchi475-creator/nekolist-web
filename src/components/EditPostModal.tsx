@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { toast } from "react-hot-toast";
-import { createListing } from "../api/listings";
+import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
+import { updateListing } from "../api/listings";
 import { uploadImages } from "../lib/imageUpload";
+import type { Listing } from "../types";
 
 const AREA_OPTIONS: Record<string, string[]> = {
   nyc: ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"],
@@ -18,57 +19,105 @@ const CATEGORIES = [
   { value: "study", label: "留学" },
 ];
 
-export default function PostForm({
-  city,
-  user,
+export default function EditPostModal({
+  listingId,
+  userEmail,
   onClose,
   onSuccess,
 }: {
-  city: string;
-  user: string;
+  listingId: string;
+  userEmail: string;
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const [listing, setListing] = useState<Listing | null>(null);
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("home");
-  const [area, setArea] = useState(AREA_OPTIONS[city]?.[0] || "");
-  const [images, setImages] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [area, setArea] = useState("");
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [newImages, setNewImages] = useState<File[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingListing, setLoadingListing] = useState(true);
   const [uploadProgress, setUploadProgress] = useState("");
+
+  useEffect(() => {
+    loadListing();
+  }, [listingId]);
+
+  const loadListing = async () => {
+    if (!supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("listings")
+        .select("*")
+        .eq("id", listingId)
+        .single();
+
+      if (error) {
+        alert("投稿の読み込みに失敗しました");
+        onClose();
+        return;
+      }
+
+      if (data.contact_email !== userEmail) {
+        alert("この投稿を編集する権限がありません");
+        onClose();
+        return;
+      }
+
+      setListing(data);
+      setTitle(data.title || "");
+      setSummary(data.summary || "");
+      setDescription(data.excerpt || "");
+      setPrice(data.price || "");
+      setCategory(data.cat || "home");
+      setArea(data.area || "");
+      setExistingImages(data.images || [data.thumb].filter(Boolean));
+    } catch (error) {
+      alert("投稿の読み込みに失敗しました");
+      onClose();
+    } finally {
+      setLoadingListing(false);
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // 最大5枚まで
-    const remainingSlots = 5 - images.length;
+    const totalImages = existingImages.length + newImages.length;
+    const remainingSlots = 5 - totalImages;
     const filesToAdd = files.slice(0, remainingSlots);
-    
+
     if (files.length > remainingSlots) {
       alert(`画像は最大5枚までです。最初の${remainingSlots}枚を追加します。`);
     }
 
-    const newImages = [...images, ...filesToAdd];
-    setImages(newImages);
+    const updatedNewImages = [...newImages, ...filesToAdd];
+    setNewImages(updatedNewImages);
 
-    // プレビューを生成
     const newPreviews = filesToAdd.map((file) => URL.createObjectURL(file));
-    setImagePreviews([...imagePreviews, ...newPreviews]);
+    setNewImagePreviews([...newImagePreviews, ...newPreviews]);
   };
 
-  const removeImage = (index: number) => {
-    const newImages = images.filter((_, i) => i !== index);
-    const newPreviews = imagePreviews.filter((_, i) => i !== index);
-    
-    // 削除するプレビューのURLを解放
-    URL.revokeObjectURL(imagePreviews[index]);
-    
-    setImages(newImages);
-    setImagePreviews(newPreviews);
+  const removeExistingImage = (index: number) => {
+    const updated = existingImages.filter((_, i) => i !== index);
+    setExistingImages(updated);
+  };
+
+  const removeNewImage = (index: number) => {
+    const updatedImages = newImages.filter((_, i) => i !== index);
+    const updatedPreviews = newImagePreviews.filter((_, i) => i !== index);
+
+    URL.revokeObjectURL(newImagePreviews[index]);
+
+    setNewImages(updatedImages);
+    setNewImagePreviews(updatedPreviews);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,59 +129,73 @@ export default function PostForm({
 
     setLoading(true);
     setUploadProgress("画像をアップロード中...");
-    
+
     try {
-      let imageUrl = "";
-      let imageUrls: string[] = [];
+      let finalImages = [...existingImages];
+      let thumb = existingImages[0] || "";
 
-      if (images.length > 0) {
-        const uploadResult = await uploadImages(images);
-        
-      if (!uploadResult.success) {
-        toast.error(uploadResult.error || "画像のアップロードに失敗しました");
-        setLoading(false);
-        setUploadProgress("");
-        return;
+      if (newImages.length > 0) {
+        const uploadResult = await uploadImages(newImages);
+
+        if (!uploadResult.success) {
+          alert(uploadResult.error || "画像のアップロードに失敗しました");
+          setLoading(false);
+          setUploadProgress("");
+          return;
+        }
+
+        finalImages = [...existingImages, ...(uploadResult.urls || [])];
+        thumb = uploadResult.thumb || existingImages[0] || "";
       }
 
-        imageUrl = uploadResult.thumb || "";
-        imageUrls = uploadResult.urls || [];
-      }
+      setUploadProgress("投稿を更新中...");
 
-      setUploadProgress("投稿を保存中...");
-
-      const result = await createListing({
+      const result = await updateListing(listingId, {
         title,
         summary,
         description,
         price,
         category,
-        city,
         area,
-        imageUrl,
-        images: imageUrls,
-        email: user,
+        imageUrl: thumb,
+        images: finalImages,
+        userEmail,
       });
 
       if (!result.success) {
-        toast.error(result.error || "投稿に失敗しました");
+        alert(result.error || "更新に失敗しました");
         setLoading(false);
         setUploadProgress("");
         return;
       }
 
       // プレビューURLを解放
-      imagePreviews.forEach((url) => URL.revokeObjectURL(url));
-      
-      toast.success("投稿しました！");
+      newImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+
+      alert("投稿を更新しました！");
       onSuccess();
     } catch (error) {
-      toast.error("投稿に失敗しました");
+      alert("更新に失敗しました");
     } finally {
       setLoading(false);
       setUploadProgress("");
     }
   };
+
+  if (loadingListing) {
+    return (
+      <div
+        className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4"
+        onClick={onClose}
+      >
+        <div className="bg-white rounded-3xl p-8">
+          <p className="text-gray-500">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const totalImages = existingImages.length + newImages.length;
 
   return (
     <div
@@ -144,7 +207,7 @@ export default function PostForm({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold">新規投稿</h2>
+          <h2 className="text-xl font-bold">投稿を編集</h2>
           <button onClick={onClose} className="text-2xl text-gray-400">
             ×
           </button>
@@ -179,9 +242,6 @@ export default function PostForm({
               placeholder="例: 綺麗なベッドルーム、2月末まで"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">
-              ※ホーム画面に表示される短い説明（30文字以内）
-            </p>
           </div>
 
           <div className="mb-4">
@@ -192,12 +252,9 @@ export default function PostForm({
               className="w-full p-3 border rounded-lg"
               rows={12}
               maxLength={500}
-              placeholder="物件・仕事・商品の詳細を記入してください&#10;&#10;【例】&#10;- 住まい: 部屋の広さ、設備、最寄り駅、入居可能日&#10;- 求人: 職種、勤務条件、給与、応募資格&#10;- 売買: 商品の状態、購入時期、受け渡し方法&#10;&#10;詳しく書くほど問い合わせが増えます！"
+              placeholder="物件・仕事・商品の詳細を記入してください"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">
-              ※投稿をクリックすると表示される詳細説明（500文字以内）
-            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
@@ -223,7 +280,7 @@ export default function PostForm({
                 onChange={(e) => setArea(e.target.value)}
                 className="w-full p-3 border rounded-lg"
               >
-                {AREA_OPTIONS[city]?.map((a) => (
+                {listing && AREA_OPTIONS[listing.city]?.map((a) => (
                   <option key={a} value={a}>
                     {a}
                   </option>
@@ -247,35 +304,68 @@ export default function PostForm({
             <label className="block text-sm font-medium mb-2">
               画像（最大5枚）
             </label>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageChange}
-              disabled={images.length >= 5 || loading}
-              className="w-full p-3 border rounded-lg disabled:opacity-50"
-            />
-            {images.length > 0 && (
-              <div className="mt-3 grid grid-cols-5 gap-2">
-                {imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={preview}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-20 object-cover rounded-lg border"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      disabled={loading}
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold disabled:opacity-50"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+            
+            {existingImages.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs text-gray-600 mb-2">既存の画像:</p>
+                <div className="grid grid-cols-5 gap-2">
+                  {existingImages.map((url, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={url}
+                        alt={`Existing ${index + 1}`}
+                        className="w-full h-20 object-cover rounded-lg border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeExistingImage(index)}
+                        disabled={loading}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold disabled:opacity-50"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
+
+            {totalImages < 5 && (
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+                disabled={loading}
+                className="w-full p-3 border rounded-lg disabled:opacity-50"
+              />
+            )}
+
+            {newImagePreviews.length > 0 && (
+              <div className="mt-3">
+                <p className="text-xs text-gray-600 mb-2">新しい画像:</p>
+                <div className="grid grid-cols-5 gap-2">
+                  {newImagePreviews.map((preview, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={preview}
+                        alt={`New ${index + 1}`}
+                        className="w-full h-20 object-cover rounded-lg border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeNewImage(index)}
+                        disabled={loading}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold disabled:opacity-50"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <p className="text-xs text-gray-500 mt-1">
               ※画像は自動で圧縮されます（最大1024px、100KB以下）
             </p>
@@ -292,7 +382,7 @@ export default function PostForm({
             disabled={loading}
             className="w-full py-3 bg-blue-500 text-white rounded-lg font-semibold disabled:opacity-50"
           >
-            {loading ? "投稿中..." : "投稿する"}
+            {loading ? "更新中..." : "更新する"}
           </button>
         </form>
       </div>

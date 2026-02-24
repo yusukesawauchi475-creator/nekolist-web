@@ -1,25 +1,88 @@
 import { supabase } from "../lib/supabase";
 
-const supa = supabase;
-const hasSupabase = !!supa;
+export async function createThread(
+  listingId: string,
+  senderEmail: string,
+  receiverEmail: string
+) {
+  if (!supabase) return null;
 
-export async function startThread(params: {
-  listing_id: string;
-  from_email: string;
-  text?: string;
-}) {
-  if (!hasSupabase || !supa) return { ok: true };
+  // 既存スレッドを検索（両方向チェック）
+  const { data: threads } = await supabase
+    .from("threads")
+    .select("*")
+    .eq("listing_id", listingId);
 
-  const thread_id = crypto.randomUUID();
+  if (threads && threads.length > 0) {
+    for (const thread of threads) {
+      const isMatch = 
+        (thread.sender_email === senderEmail && thread.receiver_email === receiverEmail) ||
+        (thread.sender_email === receiverEmail && thread.receiver_email === senderEmail);
+      
+      if (isMatch) return thread.id;
+    }
+  }
 
-  const { error } = await supa.from("messages").insert({
-    id: crypto.randomUUID(),
-    thread_id,
-    listing_id: params.listing_id,
-    from_email: params.from_email,
-    body: params.text || "はじめまして。詳細を教えてください。",
+  // 新規作成
+  const { data, error } = await supabase
+    .from("threads")
+    .insert({
+      listing_id: listingId,
+      sender_email: senderEmail,
+      receiver_email: receiverEmail,
+      last_message_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (error) {
+    return null;
+  }
+
+  return data.id;
+}
+
+export async function sendMessage(
+  threadId: string,
+  senderEmail: string,
+  content: string
+) {
+  if (!supabase) return false;
+
+  const { error: msgError } = await supabase.from("messages").insert({
+    thread_id: threadId,
+    from_email: senderEmail,
+    body: content,
   });
 
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, thread_id };
+  if (msgError) {
+    return false;
+  }
+
+  const { error: threadError } = await supabase
+    .from("threads")
+    .update({ last_message_at: new Date().toISOString() })
+    .eq("id", threadId);
+
+  if (threadError) {
+    // スレッド更新エラーは無視
+  }
+
+  return true;
+}
+
+export async function getThreadMessages(threadId: string) {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("messages")
+    .select("*")
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    return [];
+  }
+
+  return data || [];
 }

@@ -1,0 +1,25 @@
+// この内容を手動でApp.tsxに追加する必要があります
+
+// 1. import追加
+import DMModal from "./components/DMModal";
+
+// 2. state追加（他のuseStateの近く）
+const [dmListing, setDmListing] = useState<Listing | null>(null);
+
+// 3. ListCard内の「連絡する」ボタンのonClick修正
+onClick={() => {
+  if (!user) {
+    setAuthOpen(true);
+  } else {
+    setDmListing(card);
+  }
+}}
+
+// 4. 最後に追加（</div>の前）
+{dmListing && user && (
+  <DMModal
+    listing={dmListing}
+    senderEmail={user}
+    onClose={() => setDmListing(null)}
+  />
+)}

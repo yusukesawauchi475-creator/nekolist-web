@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Error><Code>AuthenticationFailed</Code><Message>Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature.
+RequestId:883b3e82-501e-005e-7d94-49ca68000000
+Time:2025-10-30T11:59:54.6755577Z</Message><AuthenticationErrorDetail>Signature did not match. String to sign used was r
+
+2025-10-30T15:20:10Z
+/blob/fileserviceuploadsperm/files/file-yBXYy3eGQyeaWgwlPOuP7F
+
+
+
+2024-08-04
+b
+
+
+max-age=604800, immutable, private
+attachment; filename=ChatGPT_Image_Oct_27__2025__09_55_46_PM.png
+
+
+</AuthenticationErrorDetail></Error>

@@ -1,11 +1,11 @@
 import {useState} from "react";
-import { supabase, hasSupabase } from "../lib/supabase";
+import { supabase } from "../lib/supabase";
 export default function AuthMock({open,onClose,onAuthed}:{open:boolean;onClose:()=>void;onAuthed:(e:string)=>void;}){
   const [email,setEmail]=useState("");
   if(!open) return null;
   const go=async()=>{
     if(!email.includes("@")) return alert("メールを入力");
-    if(hasSupabase && supabase){
+    if(supabase){
       try{
         await supabase.auth.signInWithOtp({ email, options:{ emailRedirectTo: window.location.origin } });
       }catch{}

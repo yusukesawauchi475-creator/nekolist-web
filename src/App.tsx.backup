@@ -4,8 +4,6 @@ import { auth } from "./lib/firebase";
 import { fetchListings } from "./api/listings";
 import { fetchCities } from "./api/cities";
 import { fetchFavorites } from "./api/favorites";
-import { toast } from "react-hot-toast";
-import { Toaster } from "react-hot-toast";
 import PostForm from "./components/PostForm";
 import AuthForm from "./components/AuthForm";
 import DMModal from "./components/DMModal";
@@ -70,11 +68,10 @@ function App() {
   const [showDMList, setShowDMList] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         fetchFavorites(currentUser.email!).then(setFavorites).catch(console.error);
-        // 強制プロフィール設定は解除: display_name 未設定でもそのままアプリを利用可能
       } else {
         setFavorites([]);
       }
@@ -134,10 +131,9 @@ function App() {
     return CATEGORY_MAP[cat.toLowerCase()] || cat;
   };
 
-  const handleAuthSuccess = async (email: string) => {
+  const handleAuthSuccess = (email: string) => {
     console.log("Auth success:", email);
     setShowAuthForm(false);
-    // 強制プロフィール設定は解除: ログイン後すぐアプリを利用可能
   };
 
   return (
@@ -146,8 +142,6 @@ function App() {
       background: "linear-gradient(to bottom, #F0F8FF 0%, #E6F3FF 100%)",
       fontFamily: "sans-serif" 
     }}>
-      <Toaster position="top-right" />
-      
       {/* Header */}
       <div style={{ 
         background: "white", 
@@ -169,6 +163,9 @@ function App() {
             alt="Nacho" 
             style={{ width: "40px", height: "40px", borderRadius: "8px" }}
           />
+          <div style={{ display: "flex", gap: "10px" }}>
+            {user ? (
+              <>
           <div style={{ display: "flex", gap: "10px" }}>
             {user ? (
               <>
@@ -211,6 +208,31 @@ function App() {
                     border: "none",
                     borderRadius: "18px",
                     cursor: "pointer",
+                    fontWeight: "600",
+                    fontSize: "12px"
+                  }}
+                >
+                  ログアウト
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setShowAuthForm(true)}
+                style={{
+                  padding: "7px 14px",
+                  background: "#4A90E2",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "18px",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                  fontSize: "12px"
+                }}
+              >
+                ログイン
+              </button>
+            )}
+          </div>
                     fontWeight: "600",
                     fontSize: "12px"
                   }}
@@ -431,7 +453,7 @@ function App() {
                 {/* Bottom Row */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <UserCard email={listing.contact_email} onProfileClick={setProfileModal} showText={false} size="xxs" />
+                    <UserCard email={listing.contact_email} onProfileClick={setProfileModal} />
                     <button
                       onClick={() => handleFavoriteToggle(listing.id)}
                       style={{
@@ -473,7 +495,7 @@ function App() {
                         whiteSpace: "nowrap"
                       }}
                     >
-                      {user ? "連絡する" : "ログインして連絡する"}
+                      連絡する
                     </button>
                     <button
                       onClick={() => setReportModal(listing.id)}
@@ -490,7 +512,13 @@ function App() {
                       通報
                     </button>
                     <button
-                      onClick={() => setReviewModal({ listingId: listing.id, revieweeEmail: listing.contact_email })}
+                      onClick={() => {
+                        if (!user) {
+                          setShowAuthForm(true);
+                          return;
+                        }
+                        setReviewModal({ listingId: listing.id, revieweeEmail: listing.contact_email });
+                      }}
                       style={{
                         background: "none",
                         border: "none",
