@@ -15,6 +15,7 @@ import ProfileModal from "./components/ProfileModal";
 import ReportModal from "./components/ReportModal";
 import UserCard from "./components/UserCard";
 import type { Listing, City } from "./types";
+import { getLang } from "./lib/i18n";
 
 const CATEGORIES = ["住まい", "求人", "売ります", "買います", "サービス", "留学"];
 
@@ -24,7 +25,7 @@ const AREAS: Record<string, string[]> = {
   ldn: ["全域", "Central", "East", "West"],
 };
 
-const CATEGORY_MAP: Record<string, string> = {
+const CATEGORY_MAP_JA: Record<string, string> = {
   "home": "住まい",
   "job": "求人",
   "sell": "売ります",
@@ -33,7 +34,16 @@ const CATEGORY_MAP: Record<string, string> = {
   "study": "留学"
 };
 
-function formatTimeAgo(dateString: string): string {
+const CATEGORY_MAP_EN: Record<string, string> = {
+  "home": "Housing",
+  "job": "Jobs",
+  "sell": "For Sale",
+  "buy": "Wanted",
+  "service": "Services",
+  "study": "Study"
+};
+
+function formatTimeAgo(dateString: string, isEnglish: boolean): string {
   const now = new Date();
   const past = new Date(dateString);
   const diffMs = now.getTime() - past.getTime();
@@ -41,6 +51,13 @@ function formatTimeAgo(dateString: string): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
   const diffMonths = Math.floor(diffMs / 2592000000);
+
+  if (isEnglish) {
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 30) return `${diffDays}d ago`;
+    return `${diffMonths}mo ago`;
+  }
 
   if (diffMins < 60) return `${diffMins}分前`;
   if (diffHours < 24) return `${diffHours}時間前`;
@@ -51,6 +68,8 @@ function formatTimeAgo(dateString: string): string {
 const LOGO_URL = "/logo.png";
 
 function App() {
+  const lang = getLang();
+  const isEnglish = lang === "en";
   const [user, setUser] = useState<any>(null);
   const [cities, setCities] = useState<City[]>([]);
   const [selectedCity, setSelectedCity] = useState<string>("nyc");
@@ -131,7 +150,8 @@ function App() {
   };
 
   const getCategoryDisplay = (cat: string): string => {
-    return CATEGORY_MAP[cat.toLowerCase()] || cat;
+    const map = isEnglish ? CATEGORY_MAP_EN : CATEGORY_MAP_JA;
+    return map[cat.toLowerCase()] || cat;
   };
 
   const handleAuthSuccess = async (email: string) => {
@@ -169,7 +189,44 @@ function App() {
             alt="Nacho" 
             style={{ width: "40px", height: "40px", borderRadius: "8px" }}
           />
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: "4px", fontSize: "11px", color: "#666" }}>
+              <button
+                onClick={() => {
+                  if (isEnglish) {
+                    window.location.href = "/";
+                  }
+                }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: isEnglish ? "pointer" : "default",
+                  fontWeight: !isEnglish ? "700" : "400",
+                  textDecoration: !isEnglish ? "underline" : "none",
+                }}
+              >
+                JP
+              </button>
+              <span>/</span>
+              <button
+                onClick={() => {
+                  if (!isEnglish) {
+                    window.location.href = "/eng";
+                  }
+                }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: !isEnglish ? "pointer" : "default",
+                  fontWeight: isEnglish ? "700" : "400",
+                  textDecoration: isEnglish ? "underline" : "none",
+                }}
+              >
+                EN
+              </button>
+            </div>
             {user ? (
               <>
                 <button
@@ -200,7 +257,7 @@ function App() {
                     fontSize: "12px"
                   }}
                 >
-                  投稿
+                  {isEnglish ? "Post" : "投稿"}
                 </button>
                 <button
                   onClick={handleLogout}
@@ -232,7 +289,7 @@ function App() {
                   fontSize: "12px"
                 }}
               >
-                ログイン
+                {isEnglish ? "Login" : "ログイン"}
               </button>
             )}
           </div>
@@ -289,7 +346,7 @@ function App() {
           >
             {AREAS[selectedCity]?.map((area) => (
               <option key={area} value={area}>
-                {area}
+                {area === "全域" && isEnglish ? "All Areas" : area}
               </option>
             ))}
           </select>
@@ -297,7 +354,7 @@ function App() {
           {/* Search Bar */}
           <input
             type="text"
-            placeholder="🔍 キーワード"
+            placeholder={isEnglish ? "🔍 Keyword" : "🔍 キーワード"}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -332,7 +389,7 @@ function App() {
               fontWeight: selectedCat === "すべて" ? "600" : "normal"
             }}
           >
-            すべて
+            {isEnglish ? "All" : "すべて"}
           </button>
           {CATEGORIES.map((cat) => (
             <button
@@ -349,7 +406,15 @@ function App() {
                 fontWeight: selectedCat === cat ? "600" : "normal"
               }}
             >
-              {cat}
+              {isEnglish
+                ? cat === "住まい" ? "Housing"
+                  : cat === "求人" ? "Jobs"
+                  : cat === "売ります" ? "For Sale"
+                  : cat === "買います" ? "Wanted"
+                  : cat === "サービス" ? "Services"
+                  : cat === "留学" ? "Study"
+                  : cat
+                : cat}
             </button>
           ))}
         </div>
@@ -414,7 +479,7 @@ function App() {
                     <span style={{ fontSize: "10px", color: "#999" }}>{listing.area}</span>
                   </div>
                   <span style={{ fontSize: "8px", color: "#999", whiteSpace: "nowrap" }}>
-                    {formatTimeAgo(listing.created_at)}
+                    {formatTimeAgo(listing.created_at, isEnglish)}
                   </span>
                 </div>
 
@@ -473,7 +538,9 @@ function App() {
                         whiteSpace: "nowrap"
                       }}
                     >
-                      {user ? "連絡する" : "ログインして連絡する"}
+                      {isEnglish
+                        ? user ? "Contact" : "Login to Contact"
+                        : user ? "連絡する" : "ログインして連絡する"}
                     </button>
                     <button
                       onClick={() => setReportModal(listing.id)}
@@ -487,7 +554,7 @@ function App() {
                         fontSize: "10px"
                       }}
                     >
-                      通報
+                      {isEnglish ? "Report" : "通報"}
                     </button>
                     <button
                       onClick={() => setReviewModal({ listingId: listing.id, revieweeEmail: listing.contact_email })}

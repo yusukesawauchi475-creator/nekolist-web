@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { signInWithPopup, OAuthProvider } from "firebase/auth";
 import { auth } from "../lib/firebase";
+import { getLang } from "../lib/i18n";
 
 export default function AuthForm({
   onClose,
@@ -9,6 +10,8 @@ export default function AuthForm({
   onClose: () => void;
   onSuccess: (email: string) => void;
 }) {
+  const lang = getLang();
+  const isEnglish = lang === "en";
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -76,7 +79,9 @@ export default function AuthForm({
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-          <h2 style={{ fontSize: "20px", fontWeight: "bold", margin: 0 }}>ログイン</h2>
+          <h2 style={{ fontSize: "20px", fontWeight: "bold", margin: 0 }}>
+            {isEnglish ? "Login" : "ログイン"}
+          </h2>
           <button onClick={onClose} style={{ fontSize: "28px", color: "#999", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
             ×
           </button>
@@ -105,7 +110,7 @@ export default function AuthForm({
             <svg width="18" height="18" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
               <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
             </svg>
-            Appleでログイン
+            {isEnglish ? "Continue with Apple" : "Appleでログイン"}
           </button>
 
           <div style={{ 
@@ -124,7 +129,7 @@ export default function AuthForm({
           <form onSubmit={handleEmailLogin}>
             <div style={{ marginBottom: "12px" }}>
               <label style={{ display: "block", fontSize: "12px", fontWeight: "500", marginBottom: "8px" }}>
-                メールアドレス
+                {isEnglish ? "Email Address" : "メールアドレス"}
               </label>
               <input
                 type="email"
@@ -139,13 +144,15 @@ export default function AuthForm({
                   outline: "none",
                   boxSizing: "border-box"
                 }}
-                placeholder="you@example.com"
+                placeholder={isEnglish ? "you@example.com" : "you@example.com"}
                 required
               />
             </div>
 
             <p style={{ fontSize: "11px", color: "#666", marginBottom: "12px" }}>
-              メールアドレスを入力するだけでログインできます（推奨）
+              {isEnglish
+                ? "Just enter your email to log in (recommended)."
+                : "メールアドレスを入力するだけでログインできます（推奨）"}
             </p>
 
             <button
@@ -164,7 +171,7 @@ export default function AuthForm({
                 opacity: loading ? 0.7 : 1
               }}
             >
-              メールでログイン（推奨）
+              {isEnglish ? "Continue with Email (Recommended)" : "メールでログイン（推奨）"}
             </button>
           </form>
         </div>
