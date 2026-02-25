@@ -272,7 +272,7 @@ function App() {
                     fontSize: "12px"
                   }}
                 >
-                  ログアウト
+                  {isEnglish ? "Logout" : "ログアウト"}
                 </button>
               </>
             ) : (
